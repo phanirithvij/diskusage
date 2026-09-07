@@ -8,10 +8,8 @@ import com.google.android.diskusage.datasource.PortableFile;
 import com.google.android.diskusage.datasource.StatFsSource;
 import android.annotation.TargetApi;
 import android.content.Context;
-import android.content.pm.IPackageStatsObserver;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.content.pm.PackageStats;
 import android.os.Build;
 import android.os.Environment;
 import androidx.annotation.NonNull;
@@ -55,17 +53,12 @@ public class DefaultDataSource extends DataSource {
       Method getPackageSizeInfo,
       PackageManager pm,
       final AppStatsCallback callback) throws Exception {
-    getPackageSizeInfo.invoke(
-        pm,
-        pkgInfo.getPackageName(),
-        new IPackageStatsObserver.Stub() {
-          @Override
-          public void onGetStatsCompleted(
-              PackageStats pStats, boolean succeeded) {
-            callback.onGetStatsCompleted(
-                pStats != null ? new AppStatsImpl(pStats) : null, succeeded);
-          }
-        });
+    // This legacy pre-Android-8 reflection path relied on the hidden
+    // android.content.pm.IPackageStatsObserver AIDL interface, which the
+    // SDK no longer exposes as of API 34. It was never actually called in
+    // practice (modern devices use Apps2SDLoader/StorageStatsManager
+    // instead), so it now just reports "unavailable" rather than crash.
+    callback.onGetStatsCompleted(null, false);
   }
 
   @Override
